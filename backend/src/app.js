@@ -12,7 +12,14 @@ const app = express();
 
 // Allow requests from the frontend (with credentials for cookies)
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    // Allow any vercel preview/production domain, localhost, or the explicit CLIENT_URL
+    if (!origin || origin.includes('localhost') || origin.includes('vercel.app') || origin === process.env.CLIENT_URL) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true, // Required to allow cookies to be sent/received
 }));
 
