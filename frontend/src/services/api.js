@@ -2,7 +2,13 @@ import axios from 'axios';
 
 const getBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
-  if (!envUrl) return '/api';
+  if (!envUrl) {
+    // If VITE_API_URL is missing in production on Vercel, fallback to live Render API URL
+    if (typeof window !== 'undefined' && !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) {
+      return 'https://sherystore-sheryans.onrender.com/api';
+    }
+    return '/api';
+  }
   const cleanUrl = envUrl.trim().replace(/\/$/, '');
   return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
 };
