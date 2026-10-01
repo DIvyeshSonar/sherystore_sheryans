@@ -62,6 +62,32 @@ const sampleProducts = [
   }
 ];
 
+const autoSeedDB = async () => {
+  try {
+    const productCount = await Product.countDocuments();
+    if (productCount === 0) {
+      console.log('Database has no products. Auto-seeding initial products...');
+      await Product.insertMany(sampleProducts);
+      console.log(`Auto-seeded ${sampleProducts.length} products!`);
+    }
+
+    // Ensure Admin Account exists
+    const adminEmail = 'admin@sherystore.com';
+    let admin = await User.findOne({ email: adminEmail });
+    if (!admin) {
+      await User.create({
+        name: 'Shery Admin',
+        email: adminEmail,
+        password: 'Admin@1234',
+        role: 'admin',
+      });
+      console.log('Created default Admin user: admin@sherystore.com / Admin@1234');
+    }
+  } catch (error) {
+    console.error('Auto-seed error:', error.message);
+  }
+};
+
 const seedDB = async () => {
   try {
     const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/shery_app';
@@ -111,4 +137,8 @@ const seedDB = async () => {
   }
 };
 
-seedDB();
+if (require.main === module) {
+  seedDB();
+}
+
+module.exports = { autoSeedDB, seedDB };
