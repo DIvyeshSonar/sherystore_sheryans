@@ -10,15 +10,31 @@ const app = express();
 
 // ─── Middleware ────────────────────────────────────────────────────────────────
 
-// Allow requests from the frontend (with credentials for cookies)
+// Allow requests from frontend domains with credentials (for cookies)
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow any vercel preview/production domain, localhost, or the explicit CLIENT_URL
-    if (!origin || origin.includes('localhost') || origin.includes('vercel.app') || origin === process.env.CLIENT_URL) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Allow requests with no origin (like mobile apps, curl, or same-origin server calls)
+    if (!origin) return callback(null, true);
+
+    // Check CLIENT_URL environment variable (supports comma-separated origins)
+    if (process.env.CLIENT_URL) {
+      const configuredUrls = process.env.CLIENT_URL.split(',').map((url) => url.trim().replace(/\/$/, ''));
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      if (configuredUrls.includes(normalizedOrigin)) {
+        return callback(null, true);
+      }
     }
+
+    // Allow common hosting platforms and localhost development
+    const allowedPatterns = ['localhost', '127.0.0.1', 'vercel.app', 'onrender.com', 'netlify.app', 'github.io'];
+    const isAllowed = allowedPatterns.some((pattern) => origin.includes(pattern));
+
+    if (isAllowed) {
+      return callback(null, true);
+    }
+
+    // Disallow without throwing a 500 error
+    return callback(null, false);
   },
   credentials: true, // Required to allow cookies to be sent/received
 }));

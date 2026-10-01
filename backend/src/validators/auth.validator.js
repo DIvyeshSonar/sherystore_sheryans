@@ -1,11 +1,9 @@
 const { body, param } = require('express-validator');
 const { validationResult } = require('express-validator');
 
-// Middleware to check validation results and return field-level errors
 const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    // Format errors to include field name and message for each error
     const formattedErrors = errors.array().map((err) => ({
       field: err.path,
       message: err.msg,
@@ -20,7 +18,6 @@ const validate = (req, res, next) => {
   next();
 };
 
-// Validation rules for user registration
 const registerValidator = [
   body('name')
     .trim()

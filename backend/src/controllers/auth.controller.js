@@ -3,10 +3,11 @@ const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = requir
 
 // Helper: Set the refresh token as an httpOnly cookie
 const setRefreshTokenCookie = (res, token) => {
+  const isProduction = process.env.NODE_ENV === 'production';
   res.cookie('refreshToken', token, {
     httpOnly: true,       // Not accessible via JavaScript — prevents XSS
-    secure: process.env.NODE_ENV === 'production',  // HTTPS only in production
-    sameSite: 'strict',  // CSRF protection
+    secure: isProduction, // Must be true when sameSite is 'none' in production
+    sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin cookies in production
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
   });
 };
@@ -15,10 +16,17 @@ const setRefreshTokenCookie = (res, token) => {
 // Creates a new user account
 const register = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password } = req.body || {};
+
+    if (!email || !password || !name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name, email, and password are required',
+      });
+    }
 
     // Check if the email is already registered
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: String(email).toLowerCase() });
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -46,16 +54,22 @@ const register = async (req, res, next) => {
 // Authenticates a user and returns tokens
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = req.body || {};
 
-    // Find the user (include password for comparison)
-    const user = await User.findOne({ email: email.toLowerCase() });
-
-    // Use a generic error message — never reveal which field is wrong
     const invalidCredentialsError = {
       success: false,
       message: 'Invalid email or password',
     };
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide both email and password',
+      });
+    }
+
+    // Find the user (include password for comparison)
+    const user = await User.findOne({ email: String(email).toLowerCase() });
 
     if (!user) {
       return res.status(401).json(invalidCredentialsError);
@@ -163,10 +177,11 @@ const logout = async (req, res, next) => {
     }
 
     // Clear the httpOnly cookie
+    const isProduction = process.env.NODE_ENV === 'production';
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
     });
 
     res.status(200).json({
