@@ -3,10 +3,10 @@ const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = requir
 
 // Helper: Set the refresh token as an httpOnly cookie
 const setRefreshTokenCookie = (res, token) => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER || process.env.NODE_ENV !== 'development';
   res.cookie('refreshToken', token, {
     httpOnly: true,       // Not accessible via JavaScript — prevents XSS
-    secure: isProduction, // Must be true when sameSite is 'none' in production
+    secure: isProduction, // Must be true when sameSite is 'none' in production over HTTPS
     sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin cookies in production
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
   });
@@ -177,7 +177,7 @@ const logout = async (req, res, next) => {
     }
 
     // Clear the httpOnly cookie
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER || process.env.NODE_ENV !== 'development';
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: isProduction,

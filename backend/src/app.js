@@ -8,6 +8,9 @@ const { errorHandler } = require('./middleware/error.middleware');
 
 const app = express();
 
+// Trust reverse proxy (Render, Vercel, Heroku) so secure cookies and req.protocol work over HTTPS
+app.set('trust proxy', 1);
+
 // ─── Middleware ────────────────────────────────────────────────────────────────
 
 // Allow requests from frontend domains with credentials (for cookies)
