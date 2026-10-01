@@ -1,8 +1,15 @@
 import axios from 'axios';
 
+const getBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) return '/api';
+  const cleanUrl = envUrl.trim().replace(/\/$/, '');
+  return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`;
+};
+
 // The base Axios instance — all API calls go through this
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api', // Use env variable in production, fallback to /api proxy locally
+  baseURL: getBaseUrl(), // Use normalized env variable in production, fallback to /api proxy locally
   withCredentials: true,    // Send cookies (refresh token httpOnly cookie) with every request
   headers: {
     'Content-Type': 'application/json',
